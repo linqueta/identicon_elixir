@@ -4,12 +4,23 @@ defmodule Identicon do
     |> hash_input
     |> pick_color
     |> build_grip
+    |> filter_odd_squares
+  end
+
+  def filter_odd_squares(%Identicon.Image{grid: grid} = image) do
+    %Identicon.Image{image | grid:
+      Enum.filter(grid, fn({code, _index}) -> rem(code, 2) == 0 end)
+    }
   end
 
   def build_grip(%Identicon.Image{hex: hex} = image) do
-    hex
-    |> Enum.chunk(3)
-    |> Enum.map(&mirrow_row/1)
+    %Identicon.Image{image | grid:
+      hex
+      |> Enum.chunk(3)
+      |> Enum.map(&mirrow_row/1)
+      |> List.flatten
+      |> Enum.with_index
+    }
   end
 
   def mirrow_row(row) do
@@ -18,10 +29,10 @@ defmodule Identicon do
   end
 
   def hash_input(input) do
-    hex = :crypto.hash(:md5, input)
-    |> :binary.bin_to_list
-
-    %Identicon.Image{hex: hex}
+    %Identicon.Image{hex:
+      :crypto.hash(:md5, input)
+      |> :binary.bin_to_list
+    }
   end
 
   def pick_color(%Identicon.Image{hex: [r, g ,b | _]} = image) do
